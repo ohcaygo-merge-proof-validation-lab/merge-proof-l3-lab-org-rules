@@ -1,0 +1,41 @@
+name: Bounded L3 coverage capability probe
+on:
+  push:
+    branches: [main]
+    paths: [l3_coverage_fixture.py, test_l3_coverage_fixture.py, coverage-requirements.txt, l3_capture_coverage_response.py, .github/workflows/l3-coverage-capability.yml]
+  pull_request:
+    paths: [l3_coverage_fixture.py, test_l3_coverage_fixture.py]
+permissions:
+  contents: read
+jobs:
+  measure:
+    if: github.repository == 'ohcaygo-merge-proof-validation-lab/merge-proof-l3-lab-org-rules' && (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      code-quality: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Measure real fixture execution
+        run: |
+          python3 -m venv /tmp/l3-coverage
+          /tmp/l3-coverage/bin/pip install -r coverage-requirements.txt
+          /tmp/l3-coverage/bin/coverage run --branch --source=l3_coverage_fixture -m unittest test_l3_coverage_fixture
+          /tmp/l3-coverage/bin/coverage xml -o l3-coverage.xml
+          git rev-parse HEAD
+          sha256sum l3-coverage.xml
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: actions/upload-code-coverage
+          ref: b519b7cf06e9522aa7bd8a011b30d18d198f87d1
+          path: .l3-uploader
+          persist-credentials: false
+      - name: Capture official upload and processing responses
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: python3 l3_capture_coverage_response.py
