@@ -22,7 +22,7 @@ event = json.loads(pathlib.Path(os.environ['GITHUB_EVENT_PATH']).read_text())
 pr = event.get('pull_request', {}).get('number')
 assert os.environ['GITHUB_EVENT_NAME'] in ('push', 'pull_request')
 payload = uploader.build_payload(file_path='l3-coverage.xml', language='Python', label='l3-capability-probe', commit_oid=sha, ref=os.environ['GITHUB_REF'], pr_number=str(pr) if pr else '')
-args = {'repository': REPO , 'api_url': 'https://api.github.com', 'token': os.environ['GH_TOKEN']}
+args = {'repository': REPO, 'api_url': 'https://api.github.com', 'token': os.environ['GH_TOKEN']}
 status, body = uploader.upload_report(payload=payload, **args)
 observations = [{'operation': 'upload', 'status': status, 'body': json.loads(body)}]
 report_id = uploader.handle_response(status, body)
@@ -39,4 +39,4 @@ for _ in range(24):
 print(json.dumps({'kind': 'CAPABILITY_OBSERVATION_NOT_PROOF', 'sourceSha': sha,
                   'runId': os.environ['GITHUB_RUN_ID'], 'runAttempt': os.environ['GITHUB_RUN_ATTEMPT'],
                   'workflowRef': os.environ['GITHUB_WORKFLOW_REF'], 'responses': observations}))
-assert status == 200 and observations[-1]['body'].get('processing_status') == 'succeed'
+assert status == 200 and observations[-1]['body'].get('processing_status') == 'succeeded'
